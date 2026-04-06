@@ -1,0 +1,24 @@
+[project]
+name = "labour-scheduling"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Your Name",email = "you@example.com"}
+]
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "streamlit (>=1.56.0,<2.0.0)",
+    "ortools (>=9.15.6755,<10.0.0)",
+    "fastapi (>=0.135.3,<0.136.0)",
+    "uvicorn (>=0.34.0,<1.0.0)",
+    "requests (>=2.32.0,<3.0.0)",
+    "pandas (>=2.2.0,<3.0.0)"
+]
+
+[tool.poetry]
+packages = [{include = "labour_scheduling", from = "src"}]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
