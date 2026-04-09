@@ -48,8 +48,7 @@ with st.sidebar:
 shift_labels = [f"Shift {s + 1}" for s in range(int(num_shifts))]
 day_labels = [f"Day {d + 1}" for d in range(int(num_days))]
 
-st.subheader("Demand")
-st.info("Set the number of workers needed for each day and shift.")
+tabs = st.tabs(["Demand", "Availability"])
 
 demand_store = st.session_state.setdefault("demand_store", {})
 
@@ -60,39 +59,37 @@ for day_index in range(int(num_days)):
             demand_store[demand_key] = 1
         demand_store[demand_key] = min(max(int(demand_store[demand_key]), 0), int(num_workers))
 
-header_columns = st.columns(int(num_shifts) + 1)
-header_columns[0].markdown("**Day**")
-for shift_index, shift_label in enumerate(shift_labels, start=1):
-    header_columns[shift_index].markdown(f"**{shift_label}**")
+with tabs[0]:
+    st.subheader("Demand")
+    st.info("Set the number of workers needed for each day and shift.")
 
-demand: list[list[int]] = []
-for day_index, day_label in enumerate(day_labels):
-    row_columns = st.columns(int(num_shifts) + 1)
-    row_columns[0].markdown(day_label)
+    header_columns = st.columns(int(num_shifts) + 1)
+    header_columns[0].markdown("**Day**")
+    for shift_index, shift_label in enumerate(shift_labels, start=1):
+        header_columns[shift_index].markdown(f"**{shift_label}**")
 
-    day_demand: list[int] = []
-    for shift_index in range(int(num_shifts)):
-        demand_key = (day_index, shift_index)
-        with row_columns[shift_index + 1]:
-            value = st.number_input(
-                label=f"{day_label} {shift_labels[shift_index]}",
-                min_value=0,
-                max_value=int(num_workers),
-                step=1,
-                value=int(demand_store[demand_key]),
-                key=f"demand_{day_index}_{shift_index}",
-                label_visibility="collapsed",
-            )
-        demand_store[demand_key] = int(value)
-        day_demand.append(int(value))
+    demand: list[list[int]] = []
+    for day_index, day_label in enumerate(day_labels):
+        row_columns = st.columns(int(num_shifts) + 1)
+        row_columns[0].markdown(day_label)
 
-    demand.append(day_demand)
+        day_demand: list[int] = []
+        for shift_index in range(int(num_shifts)):
+            demand_key = (day_index, shift_index)
+            with row_columns[shift_index + 1]:
+                value = st.number_input(
+                    label=f"{day_label} {shift_labels[shift_index]}",
+                    min_value=0,
+                    max_value=int(num_workers),
+                    step=1,
+                    value=int(demand_store[demand_key]),
+                    key=f"demand_{day_index}_{shift_index}",
+                    label_visibility="collapsed",
+                )
+            demand_store[demand_key] = int(value)
+            day_demand.append(int(value))
 
-st.subheader("Availability")
-st.info(
-    "For each worker, tick the cells where they **are available** to work. "
-    "All cells are ticked by default."
-)
+        demand.append(day_demand)
 
 availability_store = st.session_state.setdefault("availability_store", {})
 
@@ -108,26 +105,38 @@ for worker_index in range(int(num_workers)):
 if st.session_state.get("selected_worker_index", 0) >= int(num_workers):
     st.session_state["selected_worker_index"] = 0
 
-st.selectbox(
-    "Worker",
-    options=list(range(int(num_workers))),
-    format_func=lambda worker_index: worker_names[worker_index],
-    key="selected_worker_index",
-)
+with tabs[1]:
+    st.subheader("Availability")
+    st.info(
+        "For each worker, tick the cells where they **are available** to work. "
+        "All cells are ticked by default."
+    )
 
-selected_worker_index = st.session_state["selected_worker_index"]
-selected_availability = availability_store[selected_worker_index]
+    st.selectbox(
+        "Worker",
+        options=list(range(int(num_workers))),
+        format_func=lambda worker_index: worker_names[worker_index],
+        key="selected_worker_index",
+    )
 
-avail_df = pd.DataFrame(selected_availability, index=day_labels, columns=shift_labels)
-edited_df = st.data_editor(
-    avail_df,
-    use_container_width=True,
-    key=f"avail_editor_{selected_worker_index}",
-)
+    selected_worker_index = st.session_state["selected_worker_index"]
+    selected_availability = availability_store[selected_worker_index]
 
-availability_store[selected_worker_index] = [
-    [bool(edited_df.loc[d_label, s_label]) for s_label in shift_labels]
-    for d_label in day_labels
+    avail_df = pd.DataFrame(selected_availability, index=day_labels, columns=shift_labels)
+    edited_df = st.data_editor(
+        avail_df,
+        use_container_width=True,
+        key=f"avail_editor_{selected_worker_index}",
+    )
+
+    availability_store[selected_worker_index] = [
+        [bool(edited_df.loc[d_label, s_label]) for s_label in shift_labels]
+        for d_label in day_labels
+    ]
+
+demand: list[list[int]] = [
+    [int(demand_store[(day_index, shift_index)]) for shift_index in range(int(num_shifts))]
+    for day_index in range(int(num_days))
 ]
 
 availability: list[list[list[bool]]] = [
